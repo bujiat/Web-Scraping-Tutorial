@@ -1,0 +1,165 @@
+# Scrapy — Guide and Architecture
+
+## Installation
+
+Install Scrapy with pip:
+
+```bash
+pip install scrapy
+```
+
+Create a new project:
+
+```bash
+scrapy startproject <project_name>
+```
+
+Generate a spider:
+
+```bash
+scrapy genspider <spider_name> <allowed_domain>
+```
+
+Run your spider:
+
+```bash
+scrapy crawl <spider_name>
+```
+
+Check directory structure (Windows):
+
+```powershell
+tree mySpider /F
+```
+
+---
+
+## How Scrapy Works
+
+## <img src="./assets/scrapy_architecture.png" alt="Scrapy 架构图" width="720"/>
+
+### Timeline: From start to finish
+
+**[1] You run** `scrapy crawl xxspider`
+
+- Engine reads your `start_urls` (e.g., page=1, page=2)
+- Spider generates 2 `Request` objects and hands them to Engine
+
+**[2] Scheduler queues and deduplicates**
+
+- Engine passes Requests to Scheduler
+- Scheduler stores them in a queue (filters out duplicates)
+- Queue: [Request page=1, Request page=2]
+
+**[3] Downloader fetches pages asynchronously**
+
+- Engine pulls Request page=1 from Scheduler → Downloader
+- Downloader sends HTTP GET to xx.com
+- While waiting for page=1 to arrive (for example:2 seconds), Engine pulls Request page=2 → Downloader
+- Downloader also fetches page=2 in parallel
+- **Both pages are downloading at the same time** (this is the "async" part)
+
+**[4] Response arrives, Engine routes it to Spider**
+
+- Response page=1 arrives: "Here's the HTML of page 1 with 20 projects"
+- Engine: "This response belongs to parse(), so I'll call parse(response)"
+- Spider's `parse()` method is invoked with Response page=1
+
+**[5] Spider extracts data using XPath**
+
+- `parse()` runs an XPath query: find all 20 project blocks in the HTML
+- For each project block, it extracts  fields that you want.
+- Creates an `Item` object for each project with these fields
+- `yield item` sends the Item to Pipeline
+
+**[6] Pipeline receives and saves Items**
+
+- Pipeline's `process_item()` receives Items one by one
+- Each item is validated, cleaned, and written to `xx.json`
+- **Important rule:** `process_item()` must `return item`, or data is lost
+
+**[7] Meanwhile, Response page=2 arrives**
+
+- While `parse()` was processing page=1's 20 items, page=2 has already downloaded
+- Engine routes Response page=2 to `parse()` again
+- Another 20 items are extracted and saved
+
+**Result:** Both pages downloaded and processed asynchronously. Total time ≈ 2 seconds, not 4 seconds.
+
+### Why this design: the core insight
+
+**Problem:** Downloading is slow. For example each page takes 2 seconds. If you download one at a time, 100 pages = 200 seconds.
+
+**Solution (Scrapy's async approach):**
+
+- Don't wait for one page to download before starting the next
+- Fire off 100 requests at once
+- Process pages as they arrive
+- While page=1 is being parsed, page=2 is downloading; while page=2 is being parsed, page=3 is downloading
+- Total time for 100 pages ≈ 2 seconds (time for the slowest page)
+
+This is why Scrapy separates concerns:
+
+- **Scheduler** keeps a queue of unprocessed requests → prevents waste
+- **Downloader** handles network I/O independently → network can work in background
+- **Spider** processes responses sequentially → clear logic
+- **Engine** coordinates between them → ensures smooth flow
+- **Pipeline** is decoupled from spider → easy to change how data is saved
+
+---
+
+
+
+Example pipeline setting in `settings.py`:
+
+```python
+ITEM_PIPELINES = {
+	'myproject.pipelines.ValidatePipeline': 100,
+	'myproject.pipelines.SaveToJsonPipeline': 300,
+}
+```
+
+---
+
+## example
+
+`items.py` (model):
+
+```python
+class GiteeprItem(scrapy.Item):
+	title = scrapy.Field()
+	name = scrapy.Field()
+```
+
+`spiders/giteespider.py` (parsing loop):
+
+```python
+nodeList = response.xpath('//*[@id="caseList"]/div/div[2]/div[1]/div')
+for node in nodeList:
+	item = GiteeprItem()
+	item['title'] = node.xpath('.//a/div[2]/div/span/text()').get(default='').strip()
+	item['name'] = node.xpath('.//a/div[2]/div[3]/h3/text()').get(default='').strip()
+	yield item
+```
+
+xpath:
+
+<img src="./assets/xpath.png" alt="xpath" width="720"/>
+
+`pipelines.py` (ensure `process_item` returns the item):
+
+```python
+import json
+
+class GiteeprPipeline:
+	def __init__(self):
+		self.f = open('gitee.json', 'w', encoding='utf-8')
+
+	def process_item(self, item, spider):
+		self.f.write(json.dumps(dict(item), ensure_ascii=False) + '\n')
+		return item
+
+	def close_spider(self, spider):
+		self.f.close()
+```
+

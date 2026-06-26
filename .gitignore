@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+
+# 大体积调试文件
+examples/**/gitee.html
+examples/**/*.html
+
+# Scrapy 运行时输出（样例见 output/gitee.json）
+examples/03-scrapy-giteepr/gitee.json
+
+# Scrapy 缓存
+.scrapy/
+httpcache/
+
+# IDE
+.vscode/
+.idea/
+
+# 数据库文件（运行时生成）
+examples/**/*.db
