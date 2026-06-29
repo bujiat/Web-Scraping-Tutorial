@@ -26,6 +26,12 @@ Run your spider:
 scrapy crawl <spider_name>
 ```
 
+List all spiders in the project:
+
+```bash
+scrapy list
+```
+
 Check directory structure (Windows):
 
 ```powershell
@@ -35,8 +41,7 @@ tree mySpider /F
 ---
 
 ## How Scrapy Works
-
-## <img src="./assets/scrapy_architecture.png" alt="Scrapy 架构图" width="720"/>
+<img src="./assets/scrapy_architecture.png" alt="Scrapy Architecture" width="720"/>
 
 ### Timeline: From start to finish
 
@@ -106,8 +111,6 @@ This is why Scrapy separates concerns:
 - **Engine** coordinates between them → ensures smooth flow
 - **Pipeline** is decoupled from spider → easy to change how data is saved
 
----
-
 
 
 Example pipeline setting in `settings.py`:
@@ -121,45 +124,46 @@ ITEM_PIPELINES = {
 
 ---
 
-## example
+## Example: giteespider.py
 
-`items.py` (model):
+Code: `examples/03-scrapy/demo/spiders/giteespider.py`
+
+The simplest flow: `start_urls` → `parse()` → XPath extracts each block → `yield item` → Pipeline saves to `giteespider.json`. One page, no pagination, no extra requests.
+
+<img src="./assets/xpath.png" alt="XPath Example" width="720"/>
+
+---
+
+## Example: quote.py & quote2.py
+
+Code: `examples/03-scrapy/demo/spiders/quote.py`, `qutoe2.py`
+
+Both crawl the same site ([quotes.toscrape.com](https://quotes.toscrape.com/)), but collect **different fields** and write to **different JSON files**.
+
+**quote.py** — list page + pagination + author link
+
+- `parse()` reads quotes on the list page, builds a `QuoteItem`
+- `yield scrapy.Request(..., callback=self.parse_author, meta={'item': item})` — follow the author link; `meta` carries the half-filled item into the next callback
+- `parse_author()` adds address and birthday, then `yield item`
+- `yield scrapy.Request(..., callback=self.parse)` — follow the "next" link for pagination
+- Output: `quote.json`
+
+**quote2.py** (`qutoe2`) — list page + pagination only
+
+- Same list page parsing, but `yield item` directly — no author page
+- Output: `qutoe2.json` (content, name, link only)
+
+**Two JSON files from one site:** register two pipelines in `settings.py`. Each checks `spider.name` — `JsonWriterPipeline` handles `quote`, `Quote2Pipeline` handles `qutoe2`. Same website, different spiders, different output files.
+
+**scrapy.Request**:
 
 ```python
-class GiteeprItem(scrapy.Item):
-	title = scrapy.Field()
-	name = scrapy.Field()
+scrapy.Request(url[, callback, method='GET', headers, body, cookies, meta, dont_filter=False])
 ```
 
-`spiders/giteespider.py` (parsing loop):
+- **callback** — which method handles the response
+- **meta** — pass data between callbacks (e.g. the partial item)
+- **dont_filter** — default `False` (skip duplicate URLs); `True` to request the same URL again
+- **method / headers / cookies / body** — for POST or custom headers
 
-```python
-nodeList = response.xpath('//*[@id="caseList"]/div/div[2]/div[1]/div')
-for node in nodeList:
-	item = GiteeprItem()
-	item['title'] = node.xpath('.//a/div[2]/div/span/text()').get(default='').strip()
-	item['name'] = node.xpath('.//a/div[2]/div[3]/h3/text()').get(default='').strip()
-	yield item
-```
-
-xpath:
-
-<img src="./assets/xpath.png" alt="xpath" width="720"/>
-
-`pipelines.py` (ensure `process_item` returns the item):
-
-```python
-import json
-
-class GiteeprPipeline:
-	def __init__(self):
-		self.f = open('gitee.json', 'w', encoding='utf-8')
-
-	def process_item(self, item, spider):
-		self.f.write(json.dumps(dict(item), ensure_ascii=False) + '\n')
-		return item
-
-	def close_spider(self, spider):
-		self.f.close()
-```
-
+Docs: [Request and Response](https://docs.scrapy.org/en/latest/topics/request-response.html)<img src="./assets/scrapy_architecture.png" alt="Scrapy Architecture" width="720"/><img src="./assets/scrapy_architecture.png" alt="Scrapy Architecture" width="720"/>

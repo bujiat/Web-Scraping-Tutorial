@@ -1,6 +1,6 @@
 import scrapy
 
-from giteepr.items import GiteeprItem
+from demo.items import GiteeItem
 
 
 class GiteespiderSpider(scrapy.Spider):
@@ -11,7 +11,7 @@ class GiteespiderSpider(scrapy.Spider):
     def parse(self, response):
         nodeList = response.xpath('//*[@id="caseList"]/div/div[2]/div[1]/div')
         for node in nodeList:
-            item = GiteeprItem()
+            item = GiteeItem()
             item["title"] = node.xpath(
                 './/a/div[2]/div/span/text()'
             ).get(default="").strip()

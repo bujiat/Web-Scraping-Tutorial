@@ -9,8 +9,9 @@ venv/
 examples/**/gitee.html
 examples/**/*.html
 
-# Scrapy 运行时输出（样例见 output/gitee.json）
-examples/03-scrapy-giteepr/gitee.json
+# Scrapy 运行时输出（样例见 output/）
+examples/03-scrapy/giteespider.json
+examples/03-scrapy/quote.json
 
 # Scrapy 缓存
 .scrapy/

@@ -1,14 +1,13 @@
-# Scrapy settings for giteepr project
+BOT_NAME = "demo"
 
-BOT_NAME = "giteepr"
-
-SPIDER_MODULES = ["giteepr.spiders"]
-NEWSPIDER_MODULE = "giteepr.spiders"
+SPIDER_MODULES = ["demo.spiders"]
+NEWSPIDER_MODULE = "demo.spiders"
 
 ROBOTSTXT_OBEY = True
 
 ITEM_PIPELINES = {
-    "giteepr.pipelines.GiteeprPipeline": 300,
+    "demo.pipelines.JsonWriterPipeline": 300,
+    "demo.pipelines.Quote2Pipeline": 301,
 }
 
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"

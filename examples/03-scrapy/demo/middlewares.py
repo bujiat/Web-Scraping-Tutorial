@@ -1,7 +1,7 @@
 from scrapy import signals
 
 
-class GiteeprSpiderMiddleware:
+class DemoSpiderMiddleware:
     @classmethod
     def from_crawler(cls, crawler):
         s = cls()
@@ -26,7 +26,7 @@ class GiteeprSpiderMiddleware:
         spider.logger.info("Spider opened: %s" % spider.name)
 
 
-class GiteeprDownloaderMiddleware:
+class DemoDownloaderMiddleware:
     @classmethod
     def from_crawler(cls, crawler):
         s = cls()
