@@ -19,3 +19,8 @@ class QuoteItem2(scrapy.Item):
     content = scrapy.Field()
     name = scrapy.Field()
     link = scrapy.Field()   
+
+class DoubanItem(scrapy.Item):
+    name = scrapy.Field()
+    score = scrapy.Field()
+    

@@ -1,4 +1,5 @@
 from scrapy import signals
+import random
 
 
 class DemoSpiderMiddleware:
@@ -44,3 +45,16 @@ class DemoDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
+
+
+class DoubanUA:
+    def __init__(self, user_agent_list):
+        self.user_agent_list = user_agent_list
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings.get("USER_AGENT_LIST", []))
+
+    def process_request(self, request, spider):
+        ua = random.choice(self.user_agent_list)
+        request.headers["User-Agent"] = ua
