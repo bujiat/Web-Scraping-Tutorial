@@ -10,6 +10,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import time
 from itemadapter import ItemAdapter
+import match from scripts.s_login import match
 
 
 class LoginSpiderMiddleware:
@@ -38,7 +39,7 @@ class LoginSpiderMiddleware:
         except Exception as e:
             print("error", e)
         finally:
-            self.authorization = driver.get_cookies()
+            self.authorization = driver.get_cookies()   
             print("driver.quit")
             driver.quit()
     def process_request(self, request, spider):

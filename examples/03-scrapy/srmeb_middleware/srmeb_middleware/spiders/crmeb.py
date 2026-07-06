@@ -7,4 +7,6 @@ class CrmebSpider(scrapy.Spider):
     start_urls = ["https://pro.crmeb.net/adminapi/home/header"]
 
     def parse(self, response):
-        pass
+        yield Scrapy.FormRequest(url="https://pro.crmeb.net/admin/login", callback=self.parse1, formdata={"username": "demo"}, method="put")
+    def parse1(self, response):
+        print(response.text)

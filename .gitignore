@@ -13,6 +13,10 @@ examples/**/*.html
 examples/03-scrapy/giteespider.json
 examples/03-scrapy/quote.json
 
+# Slider captcha debug images (generated at runtime)
+examples/sldier_verification/pic.png
+examples/sldier_verification/pic2.png
+
 # Scrapy 缓存
 .scrapy/
 httpcache/
